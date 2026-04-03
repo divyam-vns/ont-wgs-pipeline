@@ -13,14 +13,7 @@ import argparse
 import gzip
 import os
 import re
-import sys
 from pathlib import Path
-
-try:
-    import pandas as pd
-    HAS_PANDAS = True
-except ImportError:
-    HAS_PANDAS = False
 
 
 def parse_flagstat(path: Path) -> dict:
@@ -65,7 +58,6 @@ def count_vcf_variants(vcf_path: Path, sv: bool = False) -> dict:
             if len(fields) > 6 and fields[6] in ("PASS", "."):
                 counts["PASS"] += 1
             if sv and len(fields) > 7:
-                # Count by SVTYPE
                 info = fields[7]
                 m = re.search(r"SVTYPE=(\w+)", info)
                 if m:
@@ -76,7 +68,11 @@ def count_vcf_variants(vcf_path: Path, sv: bool = False) -> dict:
 
 def count_methylation_sites(bedmethyl_path: Path) -> dict:
     """Count total and highly methylated CpG sites from bedMethyl."""
-    stats = {"total_CpG_sites": 0, "high_meth_sites_gt80pct": 0, "low_meth_sites_lt20pct": 0}
+    stats = {
+        "total_CpG_sites": 0,
+        "high_meth_sites_gt80pct": 0,
+        "low_meth_sites_lt20pct": 0
+    }
     if not bedmethyl_path.exists():
         return stats
     opener = gzip.open if str(bedmethyl_path).endswith(".gz") else open
@@ -89,7 +85,7 @@ def count_methylation_sites(bedmethyl_path: Path) -> dict:
                 continue
             stats["total_CpG_sites"] += 1
             try:
-                fraction = float(fields[10])   # col 11 = methylation fraction (0–1)
+                fraction = float(fields[10])
                 if fraction > 0.80:
                     stats["high_meth_sites_gt80pct"] += 1
                 elif fraction < 0.20:
@@ -119,10 +115,10 @@ def main():
 
     # ---- Alignment ----
     flagstat = parse_flagstat(R / "alignment" / f"{S}.flagstat.txt")
-    summary["total_reads"]    = flagstat.get("in_total", "N/A")
-    summary["mapped_reads"]   = flagstat.get("mapped", "N/A")
-    summary["duplicate_reads"]= flagstat.get("duplicates", "N/A")
-    summary["supplementary"]  = flagstat.get("supplementary", "N/A")
+    summary["total_reads"]     = flagstat.get("in_total", "N/A")
+    summary["mapped_reads"]    = flagstat.get("mapped", "N/A")
+    summary["duplicate_reads"] = flagstat.get("duplicates", "N/A")
+    summary["supplementary"]   = flagstat.get("supplementary", "N/A")
 
     print("ALIGNMENT")
     print(f"  Total reads       : {summary['total_reads']}")
@@ -146,9 +142,9 @@ def main():
 
     # ---- SNP/indel ----
     snp_vcf = R / "variants" / "snp" / S / "merge_output.vcf.gz"
-    snp     = count_vcf_variants(snp_vcf)
-    summary["snp_total"]  = snp.get("TOTAL", "N/A")
-    summary["snp_pass"]   = snp.get("PASS", "N/A")
+    snp = count_vcf_variants(snp_vcf)
+    summary["snp_total"] = snp.get("TOTAL", "N/A")
+    summary["snp_pass"]  = snp.get("PASS", "N/A")
 
     print("VARIANTS — SNP/indel (Clair3)")
     print(f"  Total calls       : {summary['snp_total']}")
@@ -157,9 +153,9 @@ def main():
 
     # ---- SV ----
     sv_vcf = R / "variants" / "sv" / f"{S}.sniffles.vcf.gz"
-    sv     = count_vcf_variants(sv_vcf, sv=True)
-    summary["sv_total"]  = sv.pop("TOTAL", "N/A")
-    summary["sv_pass"]   = sv.pop("PASS", "N/A")
+    sv = count_vcf_variants(sv_vcf, sv=True)
+    summary["sv_total"] = sv.pop("TOTAL", "N/A")
+    summary["sv_pass"]  = sv.pop("PASS", "N/A")
     for svtype, n in sv.items():
         summary[f"sv_{svtype}"] = n
 
@@ -168,7 +164,7 @@ def main():
     print(f"  PASS SV calls     : {summary['sv_pass']}")
     for k, v in summary.items():
         if k.startswith("sv_") and k not in ("sv_total", "sv_pass"):
-            print(f"  {k.replace('sv_',''):18s}: {v}")
+            print(f"  {k.replace('sv_', ''):18s}: {v}")
     print()
 
     # ---- Methylation ----

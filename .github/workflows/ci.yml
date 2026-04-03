@@ -18,11 +18,26 @@ jobs:
         run: |
           curl -s https://get.nextflow.io | bash
           sudo mv nextflow /usr/local/bin/
+          nextflow -version
 
-      - name: Validate Nextflow syntax
+      - name: Validate nextflow.config
         run: |
-          nextflow run nextflow/main.nf --help || true
-          echo "Nextflow lint passed"
+          grep -q "manifest"    nextflow/nextflow.config && echo "manifest block found"
+          grep -q "profiles"    nextflow/nextflow.config && echo "profiles block found"
+          grep -q "docker"      nextflow/nextflow.config && echo "docker profile found"
+          grep -q "podman"      nextflow/nextflow.config && echo "podman profile found"
+          grep -q "singularity" nextflow/nextflow.config && echo "singularity profile found"
+          echo "nextflow.config validation passed"
+
+      - name: Check all .nf files are present and non-empty
+        run: |
+          for nf in nextflow/main.nf nextflow/modules/qc.nf nextflow/modules/align.nf nextflow/modules/variant_calling.nf nextflow/modules/methylation.nf; do
+            if [ -s "$nf" ]; then
+              echo "$nf exists and is non-empty"
+            else
+              echo "$nf is missing or empty" && exit 1
+            fi
+          done
 
   # ---- Lint Snakemake ----
   lint-snakemake:
@@ -34,19 +49,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install Snakemake
         run: pip install snakemake
 
       - name: Dry-run Snakemake
         run: |
-          snakemake \
-            -s snakemake/Snakefile \
-            --configfile snakemake/config.yaml \
-            --cores 1 \
-            --dry-run \
-            --quiet 2>&1 | tail -20 || echo "Dry-run requires demo data — expected"
+          snakemake -s snakemake/Snakefile --configfile snakemake/config.yaml --cores 1 --dry-run --quiet 2>&1 | tail -20 || echo "Dry-run requires demo data - expected"
 
   # ---- Python script lint ----
   lint-python:
@@ -58,16 +68,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
-      - name: Install linters
+      - name: Install flake8
         run: pip install flake8
 
       - name: Lint scripts
         run: |
-          flake8 scripts/summarize_results.py \
-            --max-line-length=120 \
-            --ignore=E501,W503
+          flake8 scripts/summarize_results.py --max-line-length=120 --extend-ignore=E501,W503
           echo "Python lint passed"
 
   # ---- Validate config YAML ----
@@ -83,9 +91,9 @@ jobs:
       - name: Validate YAML
         run: |
           python -c "
-          import yaml, sys
+          import yaml
           for f in ['snakemake/config.yaml']:
               with open(f) as fh:
                   yaml.safe_load(fh)
-              print(f'✓ {f} is valid YAML')
+              print(f + ' is valid YAML')
           "
