@@ -106,7 +106,7 @@ def main():
     S = args.sample
 
     print(f"\n{'='*60}")
-    print(f"  ONT WGS Pipeline — Results Summary")
+    print("  ONT WGS Pipeline — Results Summary")
     print(f"  Sample : {S}")
     print(f"  Results: {R}")
     print(f"{'='*60}\n")
@@ -115,10 +115,10 @@ def main():
 
     # ---- Alignment ----
     flagstat = parse_flagstat(R / "alignment" / f"{S}.flagstat.txt")
-    summary["total_reads"]     = flagstat.get("in_total", "N/A")
-    summary["mapped_reads"]    = flagstat.get("mapped", "N/A")
+    summary["total_reads"] = flagstat.get("in_total", "N/A")
+    summary["mapped_reads"] = flagstat.get("mapped", "N/A")
     summary["duplicate_reads"] = flagstat.get("duplicates", "N/A")
-    summary["supplementary"]   = flagstat.get("supplementary", "N/A")
+    summary["supplementary"] = flagstat.get("supplementary", "N/A")
 
     print("ALIGNMENT")
     print(f"  Total reads       : {summary['total_reads']}")
@@ -129,9 +129,9 @@ def main():
     # ---- NanoPlot QC ----
     nanostats = parse_nanostats(R / "qc" / S / "NanoStats.txt")
     summary["median_read_length"] = nanostats.get("Median read length", "N/A")
-    summary["median_qual"]        = nanostats.get("Median read quality", "N/A")
-    summary["N50"]                = nanostats.get("Read length N50", "N/A")
-    summary["total_bases_Gb"]     = nanostats.get("Total bases", "N/A")
+    summary["median_qual"] = nanostats.get("Median read quality", "N/A")
+    summary["N50"] = nanostats.get("Read length N50", "N/A")
+    summary["total_bases_Gb"] = nanostats.get("Total bases", "N/A")
 
     print("QC (NanoPlot)")
     print(f"  Median read length: {summary['median_read_length']}")
@@ -144,7 +144,7 @@ def main():
     snp_vcf = R / "variants" / "snp" / S / "merge_output.vcf.gz"
     snp = count_vcf_variants(snp_vcf)
     summary["snp_total"] = snp.get("TOTAL", "N/A")
-    summary["snp_pass"]  = snp.get("PASS", "N/A")
+    summary["snp_pass"] = snp.get("PASS", "N/A")
 
     print("VARIANTS — SNP/indel (Clair3)")
     print(f"  Total calls       : {summary['snp_total']}")
@@ -155,7 +155,7 @@ def main():
     sv_vcf = R / "variants" / "sv" / f"{S}.sniffles.vcf.gz"
     sv = count_vcf_variants(sv_vcf, sv=True)
     summary["sv_total"] = sv.pop("TOTAL", "N/A")
-    summary["sv_pass"]  = sv.pop("PASS", "N/A")
+    summary["sv_pass"] = sv.pop("PASS", "N/A")
     for svtype, n in sv.items():
         summary[f"sv_{svtype}"] = n
 
