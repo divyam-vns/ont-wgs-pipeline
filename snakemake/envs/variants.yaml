@@ -1,0 +1,13 @@
+name: ont_variants
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - sniffles>=2.3
+  - htslib>=1.18           # bgzip + tabix
+  - samtools=1.23
+  # Clair3 is best run via Docker (hkubal/clair3:latest)
+  # or install via: conda install -c bioconda clair3
+  - clair3>=1.0.4

@@ -1,0 +1,16 @@
+name: ont_methylation
+channels:
+  - bioconda
+  - conda-forge
+  - nanoporetech           # ONT channel — hosts modkit
+  - defaults
+dependencies:
+  - python=3.10
+  - modkit>=0.3.0
+  - htslib>=1.18
+  - samtools=1.23
+  - pandas
+  - matplotlib
+  # modkit can also be installed from:
+  # pip install ont-modkit
+  # or pulled as Docker: docker pull ontresearch/modkit

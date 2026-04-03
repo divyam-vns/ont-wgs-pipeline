@@ -1,0 +1,15 @@
+name: ont_align
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - minimap2>=2.26
+  - samtools=1.23
+  - nanoplot>=1.42.0
+  - multiqc>=1.20
+  - htslib>=1.18          # provides bgzip + tabix
+  - pandas
+  - matplotlib
+  - tqdm

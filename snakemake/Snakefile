@@ -1,0 +1,70 @@
+# ============================================================
+# Snakefile — ONT WGS Pipeline
+# Modules: QC → Alignment → Variant Calling → Methylation
+# ============================================================
+
+configfile: "snakemake/config.yaml"
+
+import os
+
+SAMPLES   = list(config["samples"].keys())
+OUTDIR    = config["outdir"]
+REF       = config["ref"]
+BED       = config.get("bed", None)
+THREADS   = config.get("threads", 8)
+
+# ---- Include sub-rules ----
+include: "rules/qc.smk"
+include: "rules/align.smk"
+include: "rules/variant_calling.smk"
+include: "rules/methylation.smk"
+
+# ============================================================
+# Target rule — defines final outputs
+# ============================================================
+rule all:
+    input:
+        # QC
+        expand("{outdir}/qc/{sample}/NanoStats.txt",          sample=SAMPLES, outdir=OUTDIR),
+        expand("{outdir}/qc/multiqc_report.html",             outdir=OUTDIR),
+        # Alignment
+        expand("{outdir}/alignment/{sample}.sorted.bam",      sample=SAMPLES, outdir=OUTDIR),
+        expand("{outdir}/alignment/{sample}.sorted.bam.bai",  sample=SAMPLES, outdir=OUTDIR),
+        expand("{outdir}/alignment/{sample}.flagstat.txt",    sample=SAMPLES, outdir=OUTDIR),
+        # SNP/indel
+        expand("{outdir}/variants/snp/{sample}/merge_output.vcf.gz",     sample=SAMPLES, outdir=OUTDIR),
+        # SV
+        expand("{outdir}/variants/sv/{sample}.sniffles.vcf.gz",          sample=SAMPLES, outdir=OUTDIR),
+        # Methylation
+        expand("{outdir}/methylation/{sample}.bedmethyl.gz",             sample=SAMPLES, outdir=OUTDIR),
+        expand("{outdir}/methylation/{sample}.bedmethyl.gz.tbi",         sample=SAMPLES, outdir=OUTDIR),
+        # Summary
+        expand("{outdir}/summary/{sample}_pipeline_summary.txt",         sample=SAMPLES, outdir=OUTDIR),
+
+
+# ============================================================
+# Summary rule — aggregates key stats after all steps
+# ============================================================
+rule pipeline_summary:
+    input:
+        flagstat  = expand("{outdir}/alignment/{sample}.flagstat.txt",  sample=SAMPLES, outdir=OUTDIR),
+        snp_vcf   = expand("{outdir}/variants/snp/{sample}/merge_output.vcf.gz", sample=SAMPLES, outdir=OUTDIR),
+        sv_vcf    = expand("{outdir}/variants/sv/{sample}.sniffles.vcf.gz",      sample=SAMPLES, outdir=OUTDIR),
+        methyl    = expand("{outdir}/methylation/{sample}.bedmethyl.gz",          sample=SAMPLES, outdir=OUTDIR),
+    output:
+        expand("{outdir}/summary/{sample}_pipeline_summary.txt", sample=SAMPLES, outdir=OUTDIR)
+    params:
+        outdir = OUTDIR,
+        samples = SAMPLES,
+    run:
+        os.makedirs(f"{params.outdir}/summary", exist_ok=True)
+        for s in params.samples:
+            with open(f"{params.outdir}/summary/{s}_pipeline_summary.txt", "w") as f:
+                f.write(f"ONT WGS Pipeline Summary — {s}\n")
+                f.write("=" * 50 + "\n\n")
+                f.write("Alignment:\n")
+                with open(f"{params.outdir}/alignment/{s}.flagstat.txt") as fs:
+                    f.write(fs.read() + "\n")
+                f.write("SNP/indel VCF: " + f"{params.outdir}/variants/snp/{s}/merge_output.vcf.gz\n")
+                f.write("SV VCF:        " + f"{params.outdir}/variants/sv/{s}.sniffles.vcf.gz\n")
+                f.write("BedMethyl:     " + f"{params.outdir}/methylation/{s}.bedmethyl.gz\n")

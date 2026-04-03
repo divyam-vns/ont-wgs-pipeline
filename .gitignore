@@ -1,0 +1,65 @@
+# Data — never commit sequencing data
+data/demo/
+data/*.bam
+data/*.bai
+data/*.fastq*
+data/*.fasta
+data/*.fai
+data/*.fa
+data/*.pod5
+data/*.fast5
+data/*.tar.gz
+
+# Results
+results/
+work/           # Nextflow work directory
+
+# Nextflow
+.nextflow/
+.nextflow.log*
+pipeline_trace.txt
+pipeline_report.html
+pipeline_timeline.html
+pipeline_dag.html
+
+# Snakemake
+.snakemake/
+*.snakemake.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.env
+venv/
+.venv/
+
+# Conda
+.conda/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Large intermediate files
+*.sam
+*.bam
+*.cram
+*.vcf
+*.bcf

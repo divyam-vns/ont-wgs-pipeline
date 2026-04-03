@@ -1,0 +1,44 @@
+# ============================================================
+# config.yaml — Snakemake ONT WGS Pipeline Configuration
+# ============================================================
+
+# --- Sample sheet ---
+# Each sample: {name: {bam: path, fastq: path (optional)}}
+samples:
+  DEMO:
+    bam:   "../data/demo/demo.bam"
+    fastq: null                         # set if starting from FASTQ
+
+# --- Reference ---
+ref:   "../data/demo/demo.fasta"
+bed:   "../data/demo/demo.bed"         # set to null to skip BED-based calling
+
+# --- Output ---
+outdir: "results/snakemake"
+
+# --- Resources ---
+threads: 8
+mem_gb:  16
+
+# --- Tool parameters ---
+minimap2:
+  preset: "map-ont"
+  extra:  "--MD --secondary=no"
+
+clair3:
+  platform:   "ont"
+  model_path: "/opt/models/dna_r10.4.1_e8.2_400bps_hac@v4.2.0"
+  extra:      "--include_all_ctgs --no_phasing_for_fa"
+
+sniffles2:
+  min_sv_len: 50
+  min_mapq:   20
+  extra:      "--phase --output-rnames"
+
+modkit:
+  filter_threshold: 0.66
+  preset:           "traditional"
+  extra:            "--cpg --ignore h"
+
+nanoplot:
+  extra: "--plots kde dot --N50 --loglength --no_static"
