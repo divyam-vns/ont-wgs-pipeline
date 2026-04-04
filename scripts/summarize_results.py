@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""
-scripts/summarize_results.py
-Aggregates QC, alignment, variant calling, and methylation stats
-from a completed ONT WGS pipeline run into a single TSV + printed table.
-
-Usage:
-    python scripts/summarize_results.py --results results/nextflow --sample DEMO
-    python scripts/summarize_results.py --results results/snakemake --sample DEMO
-"""
-
 import argparse
 import gzip
 import os
@@ -16,8 +6,7 @@ import re
 from pathlib import Path
 
 
-def parse_flagstat(path: Path) -> dict:
-    """Parse samtools flagstat output."""
+def parse_flagstat(path):
     stats = {}
     if not path.exists():
         return stats
@@ -30,8 +19,7 @@ def parse_flagstat(path: Path) -> dict:
     return stats
 
 
-def parse_nanostats(path: Path) -> dict:
-    """Parse NanoPlot NanoStats.txt."""
+def parse_nanostats(path):
     stats = {}
     if not path.exists():
         return stats
@@ -43,8 +31,7 @@ def parse_nanostats(path: Path) -> dict:
     return stats
 
 
-def count_vcf_variants(vcf_path: Path, sv: bool = False) -> dict:
-    """Count PASS variants in a VCF (supports .vcf.gz)."""
+def count_vcf_variants(vcf_path, sv=False):
     counts = {"TOTAL": 0, "PASS": 0}
     if not vcf_path.exists():
         return counts
@@ -66,13 +53,8 @@ def count_vcf_variants(vcf_path: Path, sv: bool = False) -> dict:
     return counts
 
 
-def count_methylation_sites(bedmethyl_path: Path) -> dict:
-    """Count total and highly methylated CpG sites from bedMethyl."""
-    stats = {
-        "total_CpG_sites": 0,
-        "high_meth_sites_gt80pct": 0,
-        "low_meth_sites_lt20pct": 0
-    }
+def count_methylation_sites(bedmethyl_path):
+    stats = {"total_CpG_sites": 0, "high_meth_gt80": 0, "low_meth_lt20": 0}
     if not bedmethyl_path.exists():
         return stats
     opener = gzip.open if str(bedmethyl_path).endswith(".gz") else open
@@ -87,9 +69,9 @@ def count_methylation_sites(bedmethyl_path: Path) -> dict:
             try:
                 fraction = float(fields[10])
                 if fraction > 0.80:
-                    stats["high_meth_sites_gt80pct"] += 1
+                    stats["high_meth_gt80"] += 1
                 elif fraction < 0.20:
-                    stats["low_meth_sites_lt20pct"] += 1
+                    stats["low_meth_lt20"] += 1
             except (ValueError, IndexError):
                 pass
     return stats
@@ -97,97 +79,77 @@ def count_methylation_sites(bedmethyl_path: Path) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="Summarize ONT WGS pipeline results")
-    parser.add_argument("--results", required=True, help="Path to results directory")
-    parser.add_argument("--sample",  required=True, help="Sample name")
-    parser.add_argument("--out",     default=None,   help="Output TSV (default: stdout)")
+    parser.add_argument("--results", required=True)
+    parser.add_argument("--sample", required=True)
+    parser.add_argument("--out", default=None)
     args = parser.parse_args()
 
     R = Path(args.results)
     S = args.sample
 
-    print(f"\n{'='*60}")
-    print("  ONT WGS Pipeline — Results Summary")
-    print(f"  Sample : {S}")
-    print(f"  Results: {R}")
-    print(f"{'='*60}\n")
+    print("=" * 60)
+    print("ONT WGS Pipeline Results Summary")
+    print("Sample : " + S)
+    print("Results: " + str(R))
+    print("=" * 60)
 
     summary = {"sample": S}
 
-    # ---- Alignment ----
-    flagstat = parse_flagstat(R / "alignment" / f"{S}.flagstat.txt")
+    flagstat = parse_flagstat(R / "alignment" / (S + ".flagstat.txt"))
     summary["total_reads"] = flagstat.get("in_total", "N/A")
     summary["mapped_reads"] = flagstat.get("mapped", "N/A")
-    summary["duplicate_reads"] = flagstat.get("duplicates", "N/A")
     summary["supplementary"] = flagstat.get("supplementary", "N/A")
 
     print("ALIGNMENT")
-    print(f"  Total reads       : {summary['total_reads']}")
-    print(f"  Mapped reads      : {summary['mapped_reads']}")
-    print(f"  Supplementary     : {summary['supplementary']}")
-    print()
+    print("  Total reads  : " + str(summary["total_reads"]))
+    print("  Mapped reads : " + str(summary["mapped_reads"]))
 
-    # ---- NanoPlot QC ----
     nanostats = parse_nanostats(R / "qc" / S / "NanoStats.txt")
     summary["median_read_length"] = nanostats.get("Median read length", "N/A")
     summary["median_qual"] = nanostats.get("Median read quality", "N/A")
     summary["N50"] = nanostats.get("Read length N50", "N/A")
-    summary["total_bases_Gb"] = nanostats.get("Total bases", "N/A")
+    summary["total_bases"] = nanostats.get("Total bases", "N/A")
 
-    print("QC (NanoPlot)")
-    print(f"  Median read length: {summary['median_read_length']}")
-    print(f"  Median quality    : {summary['median_qual']}")
-    print(f"  N50               : {summary['N50']}")
-    print(f"  Total bases       : {summary['total_bases_Gb']}")
-    print()
+    print("QC")
+    print("  Median length: " + str(summary["median_read_length"]))
+    print("  Median qual  : " + str(summary["median_qual"]))
+    print("  N50          : " + str(summary["N50"]))
 
-    # ---- SNP/indel ----
     snp_vcf = R / "variants" / "snp" / S / "merge_output.vcf.gz"
     snp = count_vcf_variants(snp_vcf)
     summary["snp_total"] = snp.get("TOTAL", "N/A")
     summary["snp_pass"] = snp.get("PASS", "N/A")
 
-    print("VARIANTS — SNP/indel (Clair3)")
-    print(f"  Total calls       : {summary['snp_total']}")
-    print(f"  PASS calls        : {summary['snp_pass']}")
-    print()
+    print("SNP/indel (Clair3)")
+    print("  Total: " + str(summary["snp_total"]))
+    print("  PASS : " + str(summary["snp_pass"]))
 
-    # ---- SV ----
-    sv_vcf = R / "variants" / "sv" / f"{S}.sniffles.vcf.gz"
+    sv_vcf = R / "variants" / "sv" / (S + ".sniffles.vcf.gz")
     sv = count_vcf_variants(sv_vcf, sv=True)
     summary["sv_total"] = sv.pop("TOTAL", "N/A")
     summary["sv_pass"] = sv.pop("PASS", "N/A")
     for svtype, n in sv.items():
-        summary[f"sv_{svtype}"] = n
+        summary["sv_" + svtype] = n
 
-    print("VARIANTS — Structural (Sniffles2)")
-    print(f"  Total SV calls    : {summary['sv_total']}")
-    print(f"  PASS SV calls     : {summary['sv_pass']}")
-    for k, v in summary.items():
-        if k.startswith("sv_") and k not in ("sv_total", "sv_pass"):
-            print(f"  {k.replace('sv_', ''):18s}: {v}")
-    print()
+    print("SV (Sniffles2)")
+    print("  Total: " + str(summary["sv_total"]))
+    print("  PASS : " + str(summary["sv_pass"]))
 
-    # ---- Methylation ----
-    bed = R / "methylation" / f"{S}.bedmethyl.gz"
+    bed = R / "methylation" / (S + ".bedmethyl.gz")
     meth = count_methylation_sites(bed)
     summary.update(meth)
 
-    print("METHYLATION (modkit)")
-    print(f"  Total CpG sites   : {meth['total_CpG_sites']}")
-    print(f"  High meth (>80%)  : {meth['high_meth_sites_gt80pct']}")
-    print(f"  Low meth  (<20%)  : {meth['low_meth_sites_lt20pct']}")
-    print()
+    print("Methylation (modkit)")
+    print("  CpG sites  : " + str(meth["total_CpG_sites"]))
+    print("  High (>80%): " + str(meth["high_meth_gt80"]))
+    print("  Low  (<20%): " + str(meth["low_meth_lt20"]))
 
-    # ---- Write TSV ----
-    out_path = args.out or str(R / "summary" / f"{S}_summary.tsv")
+    out_path = args.out or str(R / "summary" / (S + "_summary.tsv"))
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-
     with open(out_path, "w") as f:
         f.write("\t".join(str(k) for k in summary.keys()) + "\n")
         f.write("\t".join(str(v) for v in summary.values()) + "\n")
-
-    print(f"Summary written to: {out_path}")
-    print(f"{'='*60}\n")
+    print("Written to: " + out_path)
 
 
 if __name__ == "__main__":
