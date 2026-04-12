@@ -16,25 +16,34 @@ process CLAIR3_SNP {
 
     script:
     def bed_arg = bed ? "--bed_fn=${bed}" : ""
-    def ref_index = ref.name + ".fai"
     """
-    # Clair3 requires ref to be indexed
+    # Index reference if needed
     if [ ! -f ${ref}.fai ]; then
         samtools faidx ${ref}
     fi
+
+    # Find built-in model path inside container
+    MODEL=\$(find /opt/models -maxdepth 1 -type d | grep -v "^/opt/models\$" | head -1)
+    if [ -z "\$MODEL" ]; then
+        MODEL=\$(find /usr -name "*.cfg" -path "*/clair3_models/*" 2>/dev/null | head -1 | xargs dirname || echo "")
+    fi
+    if [ -z "\$MODEL" ]; then
+        MODEL=\$(ls /opt/conda/bin/../share/clair3*/models/ 2>/dev/null | head -1 || echo "")
+        MODEL="/opt/conda/share/clair3/models/\$MODEL"
+    fi
+    echo "Using model: \$MODEL"
 
     run_clair3.sh \
         --bam_fn=${bam} \
         --ref_fn=${ref} \
         --threads=${task.cpus} \
         --platform=ont \
-        --model_path=/opt/models/${params.basecaller_cfg} \
+        --model_path=\$MODEL \
         --output=. \
         --sample_name=${sample} \
         ${bed_arg} \
         --include_all_ctgs \
         --no_phasing_for_fa \
-        --haploid_sensitive \
         2>&1 | tee run_clair3.log
 
     echo "Clair3 SNP/indel calling complete for ${sample}"
