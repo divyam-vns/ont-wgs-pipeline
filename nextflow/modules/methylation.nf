@@ -32,7 +32,8 @@ process MODKIT_PILEUP {
         --cpg \
         --threads ${task.cpus} \
         --log ${sample}.modkit.log \
-        --filter-threshold 0.66
+        --filter-threshold 0.66 \
+        --max-depth 500
 
     # Compress and index
     bgzip ${sample}.bedmethyl
