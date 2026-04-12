@@ -20,20 +20,19 @@ process MODKIT_PILEUP {
     modkit summary \
         ${bam} \
         --threads ${task.cpus} \
-        --log-filepath ${sample}.modkit.log \
+        --log ${sample}.modkit.log \
         > ${sample}.modkit_summary.txt 2>> ${sample}.modkit.log || true
 
-    # Per-CpG methylation pileup
+    # Per-CpG methylation pileup (5mCG + 5hmCG)
     modkit pileup \
         ${bam} \
         ${sample}.bedmethyl \
         --ref ${ref} \
-        --modified-bases m \
+        --modified-bases 5mC 5hmC \
+        --cpg \
         --threads ${task.cpus} \
-        --log-filepath ${sample}.modkit.log \
-        --filter-threshold 0.66 \
-        --mod-threshold m:0.66 \
-        --cpg
+        --log ${sample}.modkit.log \
+        --filter-threshold 0.66
 
     # Compress and index
     bgzip ${sample}.bedmethyl
