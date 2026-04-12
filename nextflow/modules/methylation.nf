@@ -23,7 +23,7 @@ process MODKIT_PILEUP {
         --log-filepath ${sample}.modkit.log \
         > ${sample}.modkit_summary.txt 2>> ${sample}.modkit.log || true
 
-    # Per-CpG methylation pileup (modkit >= 0.3 syntax)
+    # Per-CpG methylation pileup
     modkit pileup \
         ${bam} \
         ${sample}.bedmethyl \
@@ -31,9 +31,8 @@ process MODKIT_PILEUP {
         --threads ${task.cpus} \
         --log-filepath ${sample}.modkit.log \
         --filter-threshold 0.66 \
-        --mod-thresholds m:0.66 \
-        --cpg \
-        --ignore h
+        --mod-threshold m:0.66 \
+        --cpg
 
     # Compress and index
     bgzip ${sample}.bedmethyl
