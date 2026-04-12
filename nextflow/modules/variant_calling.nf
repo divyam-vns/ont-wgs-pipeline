@@ -3,6 +3,7 @@
 process CLAIR3_SNP {
     tag "${sample}"
     publishDir "${params.outdir}/variants/snp", mode: 'copy'
+    conda "bioconda::clair3"
 
     input:
     tuple val(sample), path(bam), path(bai)
@@ -22,16 +23,8 @@ process CLAIR3_SNP {
         samtools faidx ${ref}
     fi
 
-    # Find built-in model path inside container
-    MODEL=\$(find /opt/models -maxdepth 1 -type d | grep -v "^/opt/models\$" | head -1)
-    if [ -z "\$MODEL" ]; then
-        MODEL=\$(find /usr -name "*.cfg" -path "*/clair3_models/*" 2>/dev/null | head -1 | xargs dirname || echo "")
-    fi
-    if [ -z "\$MODEL" ]; then
-        MODEL=\$(ls /opt/conda/bin/../share/clair3*/models/ 2>/dev/null | head -1 || echo "")
-        MODEL="/opt/conda/share/clair3/models/\$MODEL"
-    fi
-    echo "Using model: \$MODEL"
+    MODEL="/Users/divyamishra/miniconda3/envs/clair3/bin/models/r1041_e82_400bps_hac_v410"
+    echo "Using Clair3 model: \$MODEL"
 
     run_clair3.sh \
         --bam_fn=${bam} \
