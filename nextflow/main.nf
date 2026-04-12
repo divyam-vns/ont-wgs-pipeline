@@ -57,8 +57,9 @@ workflow {
     // ---- Alignment (only if FASTQ input) ----
     def bam_ch
     if (input_file.name.endsWith('.bam') || input_file.name.endsWith('.cram')) {
-        // Already aligned — index and pass through
-        bam_ch = Channel.of( [params.sample, input_file] )
+        // Already aligned — find BAI and pass [sample, bam, bai] tuple
+        def bai_file = file(params.input + '.bai')
+        bam_ch = Channel.of( [params.sample, input_file, bai_file] )
     } else {
         MINIMAP2_ALIGN(
             Channel.of( [params.sample, input_file] ),
