@@ -28,6 +28,7 @@ process MODKIT_PILEUP {
         ${bam} \
         ${sample}.bedmethyl \
         --ref ${ref} \
+        --modified-bases m \
         --threads ${task.cpus} \
         --log-filepath ${sample}.modkit.log \
         --filter-threshold 0.66 \
