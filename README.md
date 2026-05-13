@@ -1,4 +1,4 @@
-# ONT WGS Pipeline 🧬
+# ONT WGS Pipeline
 
 **Human Whole Genome Sequencing analysis using Oxford Nanopore Technology**  
 Dual-framework implementation: **Nextflow (DSL2)** + **Snakemake**
